@@ -1,0 +1,17 @@
+
+build/
+docs/
+install/
+log/
+logs/
+
+terrain
+eeprom.bin
+mav.parm
+mav.tlog
+mav.tlog.raw
+persistent.dat
+rally-items.txt
+record.sh
+way.txt
+.vscode/
