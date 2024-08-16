@@ -39,8 +39,10 @@ class State(Enum):
     CLEAR_WP = 6
 
 class BaseNode(Node):
-    def __init__(self):
+    def __init__(self, logger_set = True):
         Node.__init__(self, "mian_node")
+        self.logger_set = logger_set
+        
         # 订阅各种服务和话题
         self.rallypoint_push_client = self.create_client(
             mavros_msgs.srv.WaypointPush, "/mavros/rallypoint/push"
@@ -150,33 +152,36 @@ class BaseNode(Node):
         # 设置参数
         self.parameters_new_set_req = False
         self.parameters_set_success = False
-
+        
+        # 设置模式
+        self.mode_new_set_req = False
+        self.mode_set_success = False
 
 class CallBackNode(BaseNode):
     def waypoint_clear_cb(self, response):
         if response.result().success:
-            self.get_logger().info("航点清空成功")
+            if self.logger_set: self.get_logger().info("航点清空成功")
             self.waypoint_clear_success = True
         else: 
             self.waypoint_clear_success = False
-            self.get_logger().info("航点清空不成功")
+            if self.logger_set: self.get_logger().info("航点清空不成功")
         self.waypoint_new_clear_req = False
         
     def parameter_pull_cb(self, response):
         if response.result().success:
-            self.get_logger().info(f"参数拉取成功, 总共有{response.result().param_received}个参数")
+            if self.logger_set: self.get_logger().info(f"参数拉取成功, 总共有{response.result().param_received}个参数")
             self.parameter_pull_success = True
         else:
             self.parameter_pull_success = False 
-            self.get_logger().info("参数拉取不成功")
+            if self.logger_set: self.get_logger().info("参数拉取不成功")
         self.parameter_new_pull_req = False
 
     def parameter_set_cb(self, response):
         if response.result().success:
-            self.get_logger().info("参数修改成功")
+            if self.logger_set: self.get_logger().info("参数修改成功")
             self.parameter_chg_success = True
         else: 
-            self.get_logger().info("参数修改不成功")
+            if self.logger_set: self.get_logger().info("参数修改不成功")
             self.parameter_chg_success = False
         self.parameter_new_chg_req = False
     
@@ -188,47 +193,47 @@ class CallBackNode(BaseNode):
             if i.successful == False:
                 flag = False
         if flag:
-            self.get_logger().info("参数设置成功")
+            if self.logger_set: self.get_logger().info("参数设置成功")
             self.parameters_set_success = True
         else: 
-            self.get_logger().info("参数设置不成功")
+            if self.logger_set: self.get_logger().info("参数设置不成功")
             self.parameters_set_success = False
         self.parameters_new_set_req = False
     
     def rallypoint_pull_cb(self, response):
         if response.result().success:
-            self.get_logger().info("集结点拉取成功")
+            if self.logger_set: self.get_logger().info("集结点拉取成功")
             self.rallypoint_pull_success = True
         else: 
             self.rallypoint_pull_success = False
-            self.get_logger().info("集结点拉取不成功")
+            if self.logger_set: self.get_logger().info("集结点拉取不成功")
         self.rallypoint_new_pull_req = False
 
     def rallypoint_clear_cb(self, response):
         if response.result().success:
-            self.get_logger().info("集结点清空成功")
+            if self.logger_set: self.get_logger().info("集结点清空成功")
             self.rallypoint_clear_success = True
         else: 
             self.rallypoint_clear_success = False
-            self.get_logger().info("集结点清空不成功")
+            if self.logger_set: self.get_logger().info("集结点清空不成功")
         self.rallypoint_new_clear_req = False
 
     def rallypoint_push_cb(self, response):
         if response.result().success:
-            self.get_logger().info("集结点上传成功")
+            if self.logger_set: self.get_logger().info("集结点上传成功")
             self.rallypoint_push_success = True
         else: 
             self.rallypoint_push_success = False
-            self.get_logger().info("集结点上传不成功")
+            if self.logger_set: self.get_logger().info("集结点上传不成功")
         self.rallypoint_new_push_req = False
 
     def waypoint_push_cb(self, response):
         if response.result().success:
-            self.get_logger().info("航点上传成功")
+            if self.logger_set: self.get_logger().info("航点上传成功")
             self.waypoint_push_success = True
         else: 
             self.waypoint_push_success = False
-            self.get_logger().info("航点上传不成功")
+            if self.logger_set: self.get_logger().info("航点上传不成功")
         self.waypoint_new_push_req = False
 
     def state_cb(self, state:mavros_msgs.msg.State):
@@ -237,24 +242,26 @@ class CallBackNode(BaseNode):
     def arm_cb(self, response):
         ret = response.result()
         if ret.success:
-            self.get_logger().info("解锁成功，即将起飞..")
+            if self.logger_set: self.get_logger().info("解锁成功，即将起飞..")
         else:
-            self.get_logger().info("解锁不成功，即将重试..")
+            if self.logger_set: self.get_logger().info("解锁不成功，即将重试..")
 
     def set_mode_cb(self, response):
         ret = response.result()
         if ret.mode_sent:
-            self.get_logger().info("更改模式成功")
+            if self.logger_set: self.get_logger().info("更改模式成功")
+            self.mode_set_success = True
         else:
-            self.get_logger().info("更改模式失败")
+            if self.logger_set: self.get_logger().info("更改模式失败")
+            self.mode_set_success = False
+        self.mode_new_set_req = False
 
     def global_position_cb(self, global_position: sensor_msgs.msg.NavSatFix):
         if self.home is None: return;
         self.global_position = [float(global_position.latitude), float(global_position.longitude), global_position.altitude - self.home_altitude]
     def home_cb(self, response: mavros_msgs.msg.HomePosition):
-        if self.home is None:
-            self.home = [response.geo.latitude, response.geo.longitude, 0]
-            self.home_altitude = response.geo.altitude
+        self.home = [response.geo.latitude, response.geo.longitude, 0]
+        self.home_altitude = response.geo.altitude
 
     def waypoint_reached_cb(self, response: mavros_msgs.msg.WaypointReached) -> None:
         self.current_reached_waypoint = response.wp_seq
@@ -430,7 +437,7 @@ class WayPointShit(CallBackNode):
     
     def waypoint_straight_line_push(self, end: list):
         while not self.waypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待上传航点服务上线...")
+            if self.logger_set: self.get_logger().info("等待上传航点服务上线...")
         req = mavros_msgs.srv.WaypointPush.Request()
         start = list(geodetic_to_enu(*self.current_rallypoint, *self.home))
         # req.waypoints.append(self.generate_waypoint(*start))
@@ -447,9 +454,8 @@ class WayPointShit(CallBackNode):
         
     def waypoint_push(self,req:mavros_msgs.srv.WaypointPush.Request):
         while not self.waypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待上传航点服务上线...")
-        self.get_logger().info("尝试上传航点...")
-        
+            if self.logger_set: self.get_logger().info("等待上传航点服务上线...")
+        if self.logger_set: self.get_logger().info("尝试上传航点...")
         self.waypoint_push_client.call_async(req).add_done_callback(
             self.waypoint_push_cb
         )
@@ -459,8 +465,8 @@ class WayPointShit(CallBackNode):
 
     def waypoint_curve_line_push(self, end: list, alpha: float, direction: bool):
         while not self.waypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待上传航点服务上线...")
-        self.get_logger().info("尝试上传航点...")
+            if self.logger_set: self.get_logger().info("等待上传航点服务上线...")
+        if self.logger_set: self.get_logger().info("尝试上传航点...")
             
         req = mavros_msgs.srv.WaypointPush.Request()
         print(self.current_rallypoint)
@@ -476,8 +482,8 @@ class WayPointShit(CallBackNode):
     
     def waypoint_clear(self):
         while not self.waypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待清空航点服务上线...")
-        self.get_logger().info("尝试清空航点...")
+            if self.logger_set: self.get_logger().info("等待清空航点服务上线...")
+        if self.logger_set:  self.get_logger().info("尝试清空航点...")
         req = mavros_msgs.srv.WaypointClear.Request()
         self.waypoint_clear_client.call_async(req).add_done_callback(
             self.waypoint_clear_cb
@@ -487,7 +493,7 @@ class WayPointShit(CallBackNode):
 class RallyPointShit(CallBackNode):
     def rallypoint_pull(self):
         while not self.rallypoint_pull_client.wait_for_service(1.0):
-            self.get_logger().info("等待拉取集结点服务上线...")
+            if self.logger_set: self.get_logger().info("等待拉取集结点服务上线...")
         req = mavros_msgs.srv.WaypointClear.Request()
         self.rallypoint_clear_client.call_async(req).add_done_callback(
             self.rallypoint_pull_cb
@@ -495,8 +501,8 @@ class RallyPointShit(CallBackNode):
 
     def rallypoint_clear(self):
         while not self.rallypoint_clear_client.wait_for_service(1.0):
-            self.get_logger().info("等待清空集结点服务上线...")
-        self.get_logger().info("尝试清空集结点")
+            if self.logger_set: self.get_logger().info("等待清空集结点服务上线...")
+        if self.logger_set: self.get_logger().info("尝试清空集结点")
         req = mavros_msgs.srv.WaypointClear.Request()
         self.rallypoint_clear_client.call_async(req).add_done_callback(
             self.rallypoint_clear_cb
@@ -504,8 +510,8 @@ class RallyPointShit(CallBackNode):
 
     def rallypoint_push(self, target: list) -> None:
         while not self.rallypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待上传集结点服务上线...")
-        self.get_logger().info("尝试上传集结点")
+            if self.logger_set: self.get_logger().info("等待上传集结点服务上线...")
+        if self.logger_set: self.get_logger().info("尝试上传集结点")
         req = mavros_msgs.srv.WaypointPush.Request()
         req.waypoints.append(self.generate_waypoint(*target, command=5100))
         self.rallypoint_push_client.call_async(req).add_done_callback(
@@ -516,8 +522,8 @@ class ParameterShit(CallBackNode):
     
     def pull_parameter(self, force_pull: bool) -> None:
         while not self.parameter_pull_client.wait_for_service(1.0):
-            self.get_logger().info("等待拉取参数服务上线...")
-        self.get_logger().info("尝试拉取参数")
+            if self.logger_set: self.get_logger().info("等待拉取参数服务上线...")
+        if self.logger_set: self.get_logger().info("尝试拉取参数")
         req = mavros_msgs.srv.ParamPull.Request()
         req.force_pull = force_pull
         self.parameter_pull_client.call_async(req).add_done_callback(
@@ -526,11 +532,11 @@ class ParameterShit(CallBackNode):
     
     def chg_parameter(self, name: str, value: any) -> None:
         while not self.parameter_set_client.wait_for_service(1.0):
-            self.get_logger().info("等待修改参数服务上线...")
+            if self.logger_set: self.get_logger().info("等待修改参数服务上线...")
         req = mavros_msgs.srv.ParamSetV2.Request()
         req.param_id = name
         req.force_set = True
-        self.get_logger().info(f"尝试修改{name}参数")
+        if self.logger_set: self.get_logger().info(f"尝试修改{name}参数")
         if type(value) == type(False):
             req.value.bool_value = value
             req.value.type = 1
@@ -544,7 +550,7 @@ class ParameterShit(CallBackNode):
             req.value.string_value = value
             req.value.type = 4
         else:
-            self.get_logger().warn(f"不支持的参数类型{(type(value))}")
+            if self.logger_set: self.get_logger().warn(f"不支持的参数类型{(type(value))}")
             return
         self.parameter_set_client.call_async(req).add_done_callback(
             self.parameter_set_cb
@@ -566,9 +572,9 @@ class ParameterShit(CallBackNode):
         return req
     def chg_parameters(self, names: list, values: list) -> None:
         while not self.parameters_set_client.wait_for_service(1.0):
-            self.get_logger().info("等待修改参数服务上线...")
+            if self.logger_set: self.get_logger().info("等待修改参数服务上线...")
         req = rcl_interfaces.srv.SetParameters.Request()
-        self.get_logger().info(f"尝试修改{names}参数")
+        if self.logger_set: self.get_logger().info(f"尝试修改{names}参数")
         for name, value in zip(names, values):
             tmp = rcl_interfaces.msg.Parameter()
             tmp.name = name
@@ -581,15 +587,15 @@ class ParameterShit(CallBackNode):
 class TakeOffShit(CallBackNode):
     def arm(self):
         while not self.arming_client.wait_for_service(1.0):
-            self.get_logger().info("等待解锁服务上线...")
+            if self.logger_set: self.get_logger().info("等待解锁服务上线...")
         request = mavros_msgs.srv.CommandBool.Request()
         request.value = True
         self.arming_client.call_async(request).add_done_callback(self.arm_cb)
 
     def set_mode(self, mode):
         while not self.set_mode_client.wait_for_service(1.0):
-            self.get_logger().info("等待set_mode服务上线...")
-        self.get_logger().info("set_mode服务已上线即将改为 %s 模式..." % mode)
+            if self.logger_set: self.get_logger().info("等待set_mode服务上线...")
+        if self.logger_set: self.get_logger().info("set_mode服务已上线即将改为 %s 模式..." % mode)
         request = mavros_msgs.srv.SetMode.Request()
         request.base_mode = 0
         request.custom_mode = mode
@@ -598,7 +604,7 @@ class TakeOffShit(CallBackNode):
 
     def takeoff_process(self, position: list) -> None:
         while not self.waypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待上传航点服务上线...")
+            if self.logger_set: self.get_logger().info("等待上传航点服务上线...")
         req = mavros_msgs.srv.WaypointPush.Request()
         target = list(enu_to_geodetic(*position, *self.home))
         req.waypoints.append(self.generate_waypoint(*target, command=22))
@@ -610,7 +616,7 @@ class TakeOffShit(CallBackNode):
 
     def land_process(self) -> None:
         while not self.waypoint_push_client.wait_for_service(1.0):
-            self.get_logger().info("等待上传航点服务上线...")
+            if self.logger_set: self.get_logger().info("等待上传航点服务上线...")
         req = mavros_msgs.srv.WaypointPush.Request()
         # target=list(enu_to_geodetic(*position,*self.home));
         req.waypoints.append(self.generate_waypoint(*self.home, command=21))

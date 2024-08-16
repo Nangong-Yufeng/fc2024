@@ -147,7 +147,7 @@ class MainNode(WayPointShit, ParameterShit, RallyPointShit):
             return
         if self.parameter_pull_success == False :
             self.pull_parameter(True)
-        if self.parameter_pull_success == True  and self.chg == False: 
+        if self.parameter_pull_success == True and self.chg == False: 
             self.rallypoint_pull()
             self.chg = True
         self.offboard_setpoint_counter += 1
