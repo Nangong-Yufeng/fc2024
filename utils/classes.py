@@ -17,6 +17,7 @@ from .location import geodetic_to_enu, enu_to_geodetic
 import numpy as np
 import nav_msgs
 import rcl_interfaces
+from scipy.spatial.transform import Rotation as R
 
 
 qos_profile = QoSProfile(
@@ -101,6 +102,12 @@ class BaseNode(Node):
             rcl_interfaces.srv.SetParameters,
             "/mavros/param/set_parameters",
         )
+        
+        self.parameters_get_client = self.create_client(
+            rcl_interfaces.srv.GetParameters,
+            "/mavros/param/get_parameters",
+        )
+        
         self.waypoint_clear_client = self.create_client(
             mavros_msgs.srv.WaypointClear,
             "/mavros/mission/clear",
@@ -112,6 +119,7 @@ class BaseNode(Node):
         self.home_altitude = 0
         # 当前状态
         self.state = mavros_msgs.msg.State()
+        self.rotate = None
         # home点坐标,无人机解锁位置
         self.home = None
         # 当前集结点
@@ -156,8 +164,26 @@ class BaseNode(Node):
         # 设置模式
         self.mode_new_set_req = False
         self.mode_set_success = False
+        
+        # 获取参数
+        self.parameters_new_get_req = False
+        self.parameters_get_success = False
+        self.parameters_get_ret = None
 
 class CallBackNode(BaseNode):
+    def parameters_get_cb(self, response):
+        result = response.result()
+        self.parameters_new_get_req = False
+        for val in result.values:
+            if val.type == 0: 
+                self.parameters_get_success = False
+                if self.logger_set: self.get_logger().info("参数获取不成功")
+                self.parameters_get_ret = None
+                return
+        self.parameters_get_success = True
+        if self.logger_set: self.get_logger().info("参数获取成功")
+        self.parameters_get_ret = result.values
+        
     def waypoint_clear_cb(self, response):
         if response.result().success:
             if self.logger_set: self.get_logger().info("航点清空成功")
@@ -267,6 +293,8 @@ class CallBackNode(BaseNode):
         self.current_reached_waypoint = response.wp_seq
     def local_position_cb(self, local_position: nav_msgs.msg.Odometry) -> None:
         self.local_position = [float(local_position.pose.pose.position.x), float(local_position.pose.pose.position.y), float(local_position.pose.pose.position.z)]        
+        self.rotate = R.from_quat([local_position.pose.pose.orientation.x, local_position.pose.pose.orientation.y, local_position.pose.pose.orientation.z, local_position.pose.pose.orientation.w])
+        
 
 class WayPointShit(CallBackNode):
     # 生成mavros消息
@@ -291,6 +319,7 @@ class WayPointShit(CallBackNode):
         res.param2 = param2
         res.param3 = param3
         res.param4 = param4
+    
         res.x_lat = x
         res.y_long = y
         res.z_alt = z
@@ -450,7 +479,6 @@ class WayPointShit(CallBackNode):
         )
         self.rallypoint_push(list(enu_to_geodetic(*end, *self.home)))
         self.current_waypoint_num = len(req.waypoints) - 1
-        self.new_mission = True
         
     def waypoint_push(self,req:mavros_msgs.srv.WaypointPush.Request):
         while not self.waypoint_push_client.wait_for_service(1.0):
@@ -461,7 +489,7 @@ class WayPointShit(CallBackNode):
         )
         # self.rallypoint_push(list(req.waypoints[len(req.waypoints)-1]))
         self.current_waypoint_num = len(req.waypoints) - 1
-        self.new_mission = True
+
 
     def waypoint_curve_line_push(self, end: list, alpha: float, direction: bool):
         while not self.waypoint_push_client.wait_for_service(1.0):
@@ -478,7 +506,7 @@ class WayPointShit(CallBackNode):
         )
         self.rallypoint_push(list(enu_to_geodetic(*end, *self.home)))
         self.current_waypoint_num = len(req.waypoints) - 1
-        self.new_mission = True
+
     
     def waypoint_clear(self):
         while not self.waypoint_push_client.wait_for_service(1.0):
@@ -529,7 +557,16 @@ class ParameterShit(CallBackNode):
         self.parameter_pull_client.call_async(req).add_done_callback(
             self.parameter_pull_cb
         )
-    
+        
+    def get_parameters(self, names: list) -> any:
+        while not self.parameters_get_client.wait_for_service(1.0):
+            if self.logger_set: self.get_logger().info("等待获取参数服务上线...")
+        if self.logger_set: self.get_logger().info(f"尝试获取参数{names}")
+        req = rcl_interfaces.srv.GetParameters.Request()
+        req.names = names
+        self.parameters_get_client.call_async(req).add_done_callback(
+            self.parameters_get_cb
+        )
     def chg_parameter(self, name: str, value: any) -> None:
         while not self.parameter_set_client.wait_for_service(1.0):
             if self.logger_set: self.get_logger().info("等待修改参数服务上线...")

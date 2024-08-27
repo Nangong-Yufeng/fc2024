@@ -2,7 +2,12 @@ local function create_parameter()
     local PARAM_TABLE_KEY = 100
     assert(param:add_table(PARAM_TABLE_KEY,"TARGET_",10),"Unable to add params!")
     param:add_param(PARAM_TABLE_KEY,1,"GET",0)
+    param:add_param(PARAM_TABLE_KEY,2,"NUM",0)
+    param:add_param(PARAM_TABLE_KEY,3,"AUTO",0)
+
 end
+
+
 
 
 local function read_mission(file_name) --从文件中读取航点
@@ -64,16 +69,24 @@ local function read_mission(file_name) --从文件中读取航点
 
  local target_get = false
  function update()
-     if target_get == false then
+      if param:get("TARGET_GET") == nil then
          create_parameter()
-         target_get = true
-     end
-     if target_get == true and param:get("TARGET_GET") == 1 then
-         read_mission('../way.txt')
          param:set("TARGET_GET",0)
-     else
-         return update, 500
-     end
- return update,500
- end
- return update,500
+         param:set("TARGET_NUM", 0)
+         param:set("TARGET_AUTO", 0)
+         target_get = true
+      elseif param:get("TARGET_GET") == 1 then
+         tmp = param:get("TARGET_NUM")
+         if tmp == 1.0 then read_mission('../way1.txt')
+         elseif tmp == 2.0 then read_mission('../way2.txt')
+         elseif tmp == 3.0 then read_mission('../way3.txt')
+         end
+         param:set("TARGET_GET",0)
+         param:set("TARGET_NUM", 0)
+         param:set("TARGET_AUTO", 1)
+      end
+return update,500
+end
+
+
+return update,500

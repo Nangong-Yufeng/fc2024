@@ -38,11 +38,11 @@ class TestState(Enum):
     TETS_RP_PUSH_AND_CLEAR = 3
     TETS_MODE_CHG = 4
     TEST_OVER = 5
+    TEST_PARAM_GET = 6
 
 
 
 class TestInfo:
-    
     def __init__ (self, test_state:TestState, time:float | list):
         self.test_state = test_state
         self.time = time
@@ -68,9 +68,9 @@ class TestNode(WayPointShit, TakeOffShit, ParameterShit, RallyPointShit):
         self.test_consume_time_list = []
         
         self.test_timer = self.create_timer(0.01, self.test_timer_cb)
-        
+    
     def gen_test_wp(self):
-        self.home = [22.5905687, 113.9750004, 0]
+        self.home = [22.59094024, 113.97535239, 0]
         self.get_logger().info("生成中...")
         req = mavros_msgs.srv.WaypointPush.Request()
         # start = geodetic_to_enu(22.59094024, 113.97535239, 120, *self.home)
@@ -78,7 +78,6 @@ class TestNode(WayPointShit, TakeOffShit, ParameterShit, RallyPointShit):
         # req.waypoints.append(self.generate_waypoint(*start))
         # req.waypoints.extend(self.generate_straight_line_waypoints(start, end, increase=20.))
         # self.waypoint_push(req)
-        
         start = geodetic_to_enu(22.59094219, 113.97505543 , 120, *self.home)
         end = geodetic_to_enu(22.59004532, 113.97505278 , 120, *self.home)
         req.waypoints.append(self.generate_waypoint(*start))
@@ -117,7 +116,6 @@ class TestNode(WayPointShit, TakeOffShit, ParameterShit, RallyPointShit):
         req.waypoints.extend(self.generate_curve_line_waypoints_radius(start, end, 40., False, 20)[:])
         self.home = None
         return req
-    
     
     def output_test_info(self, msg:str, test_info:TestInfo):
         print('\n')
@@ -234,7 +232,7 @@ class TestNode(WayPointShit, TakeOffShit, ParameterShit, RallyPointShit):
                 self.mode_set_success = False
                 self.test_mode_stage_round += 1
                 if self.test_mode_stage_round == self.round_limit:
-                    self.test_state = TestState.TEST_OVER
+                    self.test_state = TestState.TEST_PARAM_GET
                     self.test_consume_time_list.append(self.time_counter*0.01)
                     self.time_counter = 0
                     self.output_test_info(f"模式设置共{self.round_limit}次", TestInfo(TestState.TETS_MODE_CHG, self.test_consume_time_list))
@@ -248,7 +246,31 @@ class TestNode(WayPointShit, TakeOffShit, ParameterShit, RallyPointShit):
             elif self.mode_new_set_req== False and self.mode_set_success == False:
                 self.mode_new_set_req = True
                 self.set_mode(self.test_mode_list[mode_idx])
-            
+        
+        if self.test_state == TestState.TEST_PARAM_GET:
+            self.time_counter += 1
+            param_idx = self.test_param_stage_round % len(self.test_param_list)
+            if self.parameters_new_get_req == False and self.parameters_get_success == True:
+                self.parameters_get_success = False
+                self.test_param_stage_round += 1
+                if self.test_param_stage_round == self.round_limit:
+                    self.test_state = TestState.TEST_OVER
+                    self.control_state = State.CLEAR_WP
+                    self.test_consume_time_list.append(self.time_counter*0.01)
+                    self.time_counter = 0
+                    self.output_test_info(f"参数获取共{self.round_limit}次", TestInfo(TestState.TEST_PARAM_GET, self.test_consume_time_list))
+                    self.test_consume_time_list = []
+                    self.test_param_stage_round = 0
+                else:
+                    self.test_consume_time_list.append(self.time_counter*0.01)
+                    self.time_counter = 0 
+                    self.parameters_new_get_req = True
+                    self.get_parameters([self.test_param_list[param_idx][0]])
+            elif self.parameters_new_get_req == False and self.parameters_get_success == False:
+                self.parameters_new_get_req = True
+                self.get_parameters([self.test_param_list[param_idx][0]])
+
+        
         if self.test_state == TestState.TEST_OVER:
             if self.control_state == State.CLEAR_WP:
                 if self.waypoint_new_clear_req == False and self.waypoint_clear_success == True:
@@ -395,7 +417,7 @@ class RandomWalkerNode(WayPointShit, TakeOffShit, ParameterShit, RallyPointShit)
 
 def main(args=None):
     rclpy.init(args=args)
-    node = TestNode()
+    node = MainNode()
     rclpy.spin(node)
     # print("spin")
     node.destroy_node()

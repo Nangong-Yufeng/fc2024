@@ -17,6 +17,7 @@ import sys
 sys.path.append("/home/joe/Desktop/NGYF_ws")
 from utils.classes import BaseNode, WayPointShit, TakeOffShit, ParameterShit, RallyPointShit, CallBackNode, State
 from utils.location import geodetic_to_enu, enu_to_geodetic
+from utils.DropWayPointGen import DropWayPointGen
 
 qos_profile = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -121,7 +122,7 @@ class MainNode(WayPointShit, ParameterShit, RallyPointShit):
                 self.rallypoint_clear()
         
         elif self.control_state == State.PUSH_RALLY:
-            # if self.state.mode != "AUTO": return
+            if self.state.mode != "AUTO": return
             if self.rallypoint_new_push_req == False and self.rallypoint_push_success == True:
                 self.rallypoint_push_success == False
                 self.control_state = State.CHG_PARAM
@@ -154,9 +155,68 @@ class MainNode(WayPointShit, ParameterShit, RallyPointShit):
         # if self.home != None:
         #     print(self.home)
         
+        
+        
+class PlayGroundNode(WayPointShit, ParameterShit, RallyPointShit):
+    def __init__(self):
+        BaseNode.__init__(self)
+        self.new_mission = True
+        # self.timer = self.create_timer(0.1, self.timer_cb2)
+        self.timer = self.create_timer(0.1, self.timer_cb)
+        self.home = [22.5905687, 113.9750004, 0.]
+        self.offboard_setpoint_counter = 0
+        self.chg = False
+        self.cache = None
+        self.control_state = State.CLEAR_WP
+        
+    def timer_cb(self):
+        # print("working...")
+        # print(self.control_state)
+        if self.offboard_setpoint_counter <= 20:
+            tmp = DropWayPointGen([22.8029459, 114.2954118, 0], [22.8027046, 114.2958075, 20], [22.8027553, 114.2960058, 20], [22.802882, 114.2958132, 20])
+            # print(tmp.rally)
+            self.cache = tmp.det_ret
+            
+        elif self.control_state == State.CLEAR_WP:
+            if self.waypoint_new_clear_req == False and self.waypoint_clear_success == True:
+                self.waypoint_clear_success == False
+                self.control_state = State.PUSH_WP
+            elif self.waypoint_new_clear_req == False and self.waypoint_clear_success == False:
+                self.waypoint_new_clear_req = True
+                self.waypoint_clear()
+        
+        elif self.control_state == State.PUSH_WP:
+            if self.waypoint_new_push_req == False and self.waypoint_push_success == True:
+                self.waypoint_push_success == False
+                self.control_state = State.CLEAR_RALLY
+            elif self.waypoint_new_push_req == False and self.waypoint_push_success == False:
+                self.waypoint_new_push_req = True
+                self.waypoint_push(self.cache)
+        
+        elif self.control_state == State.CLEAR_RALLY:
+            if self.rallypoint_new_clear_req == False and self.rallypoint_clear_success == True:
+                self.rallypoint_clear_success == False
+                self.control_state = State.PUSH_RALLY
+            elif self.rallypoint_new_clear_req == False and self.rallypoint_clear_success == False:
+                self.rallypoint_new_clear_req = True
+                self.rallypoint_clear()
+        
+        elif self.control_state == State.PUSH_RALLY:
+            # if self.state.mode != "AUTO": return
+            if self.rallypoint_new_push_req == False and self.rallypoint_push_success == True:
+                self.rallypoint_push_success == False
+                self.control_state = State.CHG_PARAM
+            elif self.rallypoint_new_push_req == False and self.rallypoint_push_success == False:
+                self.rallypoint_new_push_req = True
+                tmp = DropWayPointGen([22.8029459, 114.2954118, 0], [22.8027046, 114.2958075, 20], [22.8027553, 114.2960058, 20], [22.802882, 114.2958132, 20])
+                self.rallypoint_push(tmp.rally)
+                
+        
+        self.offboard_setpoint_counter += 1
+            
 def main(args=None):
     rclpy.init(args=args)
-    node = MainNode()
+    node = PlayGroundNode()
     rclpy.spin(node)
     # print("spin")
     node.destroy_node()
