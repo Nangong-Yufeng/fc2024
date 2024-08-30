@@ -31,14 +31,14 @@ class TrajectoryRelateNode(Node):
 
     def __init__(self):
         super().__init__('pose_relate_node')
-        self.declare_parameter('waypoint_file', "/home/joe/Desktop/waypoints_test/drop/drop6.waypoints")
-        # self.declare_parameter('waypoint_file', "no")
+        # self.declare_parameter('waypoint_file', "/home/joe/Desktop/waypoints_test/drop/drop6.waypoints")
+        self.declare_parameter('waypoint_file', "no")
         
         # self.local_position_sub = self.create_subscription(PoseStamped,"/mavros/local_position/pose",self.local_position_cb,qos_profile)
         # self.local_velocity_sub = self.create_subscription(TwistStamped, "/mavros/local_position/velocity_local", self.local_velocity_cb, qos_profile)
-        self.global_position_sub = self.create_subscription(NavSatFix, "/mavros/global_position/global",self.global_position_cb, qos_profile)
-        # self.odom_sub = self.create_subscription(Odometry, "/mavros/global_position/local",self.odom_cb, qos_profile)
-        # self.home_sub = self.create_subscription(HomePosition, "/mavros/home_position/home",self.home_cb, qos_profile)
+        # self.global_position_sub = self.create_subscription(NavSatFix, "/mavros/global_position/global",self.global_position_cb, qos_profile)
+        self.odom_sub = self.create_subscription(Odometry, "/mavros/global_position/local",self.odom_cb, qos_profile)
+        self.home_sub = self.create_subscription(HomePosition, "/mavros/home_position/home",self.home_cb, qos_profile)
         
         self.local_data = []
         self.global_data = []
@@ -48,7 +48,7 @@ class TrajectoryRelateNode(Node):
         self.x, self.y, self.z, self.w = 0, 0, 0, -10
         self.trajectory = []
         self.pose_draw_timer = self.create_timer(0, self.draw)
-        self.home = [22.590569, 113.975000, 36.600000]
+        self.home = None
         
         plt.ion()
         
