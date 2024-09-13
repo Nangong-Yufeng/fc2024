@@ -122,7 +122,7 @@ class DropWayPointGen(WayPointShit):
         req = mavros_msgs.srv.WaypointPush.Request()
         req.waypoints.append(self.generate_waypoint(0., 0., 0.))
         req.waypoints.extend(self.generate_straight_line_waypoints(subsidiary_point3, subsidiary_point4, increase=25.))
-        tmp = self.generate_curve_line_waypoints_radius(subsidiary_point2, subsidiary_point4, 50, False, 20.)[::-1]
+        tmp = self.generate_curve_line_waypoints_radius(subsidiary_point2, subsidiary_point4, 100, False, 20.)[::-1]
         req.waypoints.extend(tmp[2:-1])
         req.waypoints.extend(self.generate_straight_line_waypoints(subsidiary_point2, subsidiary_point1, increase=25.))
         return req
@@ -148,6 +148,8 @@ class DropWayPointGen(WayPointShit):
         req.waypoints.extend(self.generate_straight_line_waypoints(st, ed, increase=25.))
         return req
     
+    
+    # TODO: 针对性修改了一些东西
     def gen_drop_waypoint_v2(self, target: list):
         h = target[2]
         def gen_rotate(x):
@@ -157,11 +159,12 @@ class DropWayPointGen(WayPointShit):
         center = np.array(geodetic_to_enu(*self.rally, *self.home))[:2]
         target_2 = np.array(target)[:2]
         a = np.linalg.norm(target_2 - center)
-        b = 100.
+        # 修改了盘旋半径
+        b = 70.
         theta = np.arctan(b/a)
         dir = ((center - target_2) / a)
         dir = gen_rotate(theta)@ dir
-        dir = 190 * dir + target_2
+        dir = 160 * dir + target_2
         tmp = np.zeros(3)
         tmp[0] = dir[0]
         tmp[1] = dir[1]
@@ -169,7 +172,7 @@ class DropWayPointGen(WayPointShit):
         req.waypoints.extend(self.generate_straight_line_waypoints(tmp, target, increase=25.))
         return req
         
-    
+    # TODO: 针对性修改了一些东西
     def gen_rally_waypoint(self):
         def gen_rotate(x):
             return np.array([[np.cos(x), -np.sin(x)], [np.sin(x), np.cos(x)]])
@@ -180,7 +183,10 @@ class DropWayPointGen(WayPointShit):
         dir[0] = rot[0]
         dir[1] = rot[1]
         st = (dir * 250. + np.array(mid)).tolist()
-        st[-1] = 50
+        
+        # 修改的部分
+        st[0] += 60
+        st[-1] = 120
         st = enu_to_geodetic(*st, *self.home)
         return st
         
