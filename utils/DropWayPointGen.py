@@ -122,7 +122,7 @@ class DropWayPointGen(WayPointShit):
         req = mavros_msgs.srv.WaypointPush.Request()
         req.waypoints.append(self.generate_waypoint(0., 0., 0.))
         req.waypoints.extend(self.generate_straight_line_waypoints(subsidiary_point3, subsidiary_point4, increase=25.))
-        tmp = self.generate_curve_line_waypoints_radius(subsidiary_point2, subsidiary_point4, 100, False, 20.)[::-1]
+        tmp = self.generate_curve_line_waypoints_radius(subsidiary_point2, subsidiary_point4, 50, False, 20.)[::-1]
         req.waypoints.extend(tmp[2:-1])
         req.waypoints.extend(self.generate_straight_line_waypoints(subsidiary_point2, subsidiary_point1, increase=25.))
         return req
@@ -159,17 +159,23 @@ class DropWayPointGen(WayPointShit):
         center = np.array(geodetic_to_enu(*self.rally, *self.home))[:2]
         target_2 = np.array(target)[:2]
         a = np.linalg.norm(target_2 - center)
+        
         # 修改了盘旋半径
-        b = 70.
+        b = 50.
         theta = np.arctan(b/a)
         dir = ((center - target_2) / a)
         dir = gen_rotate(theta)@ dir
-        dir = 160 * dir + target_2
-        tmp = np.zeros(3)
-        tmp[0] = dir[0]
-        tmp[1] = dir[1]
-        tmp[2] = target[2]
-        req.waypoints.extend(self.generate_straight_line_waypoints(tmp, target, increase=25.))
+        st = 160 * dir + target_2 
+        tmp_st = np.zeros(3)
+        tmp_st[0] = st[0]
+        tmp_st[1] = st[1]
+        tmp_st[2] = target[2]
+        ed = -60 * dir + target_2 
+        tmp_ed = np.zeros(3)
+        tmp_ed[0] = ed[0]
+        tmp_ed[1] = ed[1]
+        tmp_ed[2] = target[2]
+        req.waypoints.extend(self.generate_straight_line_waypoints(tmp_st, tmp_ed, increase=25.))
         return req
         
     # TODO: 针对性修改了一些东西
@@ -185,8 +191,8 @@ class DropWayPointGen(WayPointShit):
         st = (dir * 250. + np.array(mid)).tolist()
         
         # 修改的部分
-        st[0] += 60
-        st[-1] = 120
+        # st[0] = 30
+        st[-1] = 40
         st = enu_to_geodetic(*st, *self.home)
         return st
         

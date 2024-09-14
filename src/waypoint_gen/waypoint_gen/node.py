@@ -173,9 +173,9 @@ class PlayGroundNode(WayPointShit, ParameterShit, RallyPointShit):
         # print("working...")
         # print(self.control_state)
         if self.offboard_setpoint_counter <= 20:
-            tmp = DropWayPointGen([22.5905687, 113.9750004, 0], [22.59098958, 113.97530335, 120], [22.59078045, 113.97509099, 120], [22.59072163, 113.97555110, 120])
+            tmp = DropWayPointGen([22.8029609, 114.2954183, 0], [22.8027954, 114.2956091, 20], [22.8029707, 114.2956903, 20], [22.8029629, 114.2954837, 20])
             # print(tmp.rally)
-            self.cache = tmp.tg3_ret
+            self.cache = tmp.det_ret
             
         elif self.control_state == State.CLEAR_WP:
             if self.waypoint_new_clear_req == False and self.waypoint_clear_success == True:
@@ -208,7 +208,7 @@ class PlayGroundNode(WayPointShit, ParameterShit, RallyPointShit):
                 self.control_state = State.CHG_PARAM
             elif self.rallypoint_new_push_req == False and self.rallypoint_push_success == False:
                 self.rallypoint_new_push_req = True
-                tmp = DropWayPointGen([22.5905687, 113.9750004, 0], [22.59098958, 113.97530335, 120], [22.59078045, 113.97509099, 120], [22.59072163, 113.97555110, 120])
+                tmp = DropWayPointGen([22.8029609, 114.2954183, 0], [22.8027954, 114.2956091, 20], [22.8029707, 114.2956903, 20], [22.8029629, 114.2954837, 20])
                 self.rallypoint_push(tmp.rally)
                 
         
