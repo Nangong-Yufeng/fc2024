@@ -15,7 +15,13 @@ from nav_msgs.msg import Odometry
 from mavros_msgs.msg import HomePosition
 
 import sys
-sys.path.append("/home/joe/Desktop/NGYF_ws")
+import os
+from pathlib import Path
+FILE = os.getcwd()
+ROOT = FILE # YOLOv5 root directory
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from utils.location import geodetic_to_enu
 
 qos_profile = QoSProfile(

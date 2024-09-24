@@ -7,10 +7,6 @@ f = (a - b) / a
 e_sq = f * (2-f)
 pi = 3.14159265359
 
-from pygeodesy.geoids import GeoidPGM
-_egm96 = GeoidPGM('/usr/share/GeographicLib/geoids/egm96-5.pgm', kind=-3) 
-def geoid_height(lat, lon):
-    return _egm96.height(lat, lon)
  
 def geodetic_to_ecef(lat, lon, h):
     # (lat, lon) in degrees

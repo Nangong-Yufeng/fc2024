@@ -14,7 +14,13 @@ from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry
 from scipy import interpolate
 import sys
-sys.path.append("/home/joe/Desktop/NGYF_ws")
+import os
+from pathlib import Path
+FILE = os.getcwd()
+ROOT = FILE # YOLOv5 root directory
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from utils.quaternion import Quaternion
 
 qos_profile = QoSProfile(

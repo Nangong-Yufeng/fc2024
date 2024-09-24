@@ -1,17 +1,22 @@
 import numpy as np
-import sys
-
 import mavros_msgs.srv 
-sys.path.append("/home/joe/Desktop/NGYF_ws")
+import sys
+import os
+from pathlib import Path
+FILE = os.getcwd()
+ROOT = FILE # YOLOv5 root directory
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 import mavros_msgs.msg
 from utils.location import geodetic_to_enu, enu_to_geodetic
 from utils.classes import WayPointShit
 import mavros_msgs
-from scipy import stats
 
 
+
+# 外场测试版
 class DropWayPointGen(WayPointShit):
-
     def __init__(self):
         self.home = None
         
@@ -104,6 +109,7 @@ class DropWayPointGen(WayPointShit):
         ret = (ed + dist * v).tolist()
         return ret
     def get_angle(self, top, bot1, bot2) -> float:
+        
         top = np.array(top)
         bot1 = np.array(bot1)
         bot2 = np.array(bot2)
@@ -127,12 +133,15 @@ class DropWayPointGen(WayPointShit):
         req.waypoints.extend(self.generate_straight_line_waypoints(subsidiary_point2, subsidiary_point1, increase=25.))
         return req
     
+    # 比赛四个点天井点坐标生成侦察航线
+    
     def output_wp_to_file(self, path:str, req: mavros_msgs.srv.WaypointPush.Request):
         with open(path, 'w') as f:
             f.write("QGC WPL 110\n")
             for i in range(len(req.waypoints)):
                 f.write(f"{i}\t{0}\t{req.waypoints[i].frame}\t{req.waypoints[i].command}\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t{req.waypoints[i].x_lat}\t{req.waypoints[i].y_long}\t{req.waypoints[i].z_alt}\t{1}\n")
-                
+    
+    # 不会根据盘旋点作出变化            
     def gen_drop_waypoint(self, target: list):
         req = mavros_msgs.srv.WaypointPush.Request()
         req.waypoints.append(self.generate_waypoint(0., 0., 0.))
@@ -148,7 +157,7 @@ class DropWayPointGen(WayPointShit):
         req.waypoints.extend(self.generate_straight_line_waypoints(st, ed, increase=25.))
         return req
     
-    
+    # 从盘旋点开始出发
     # TODO: 针对性修改了一些东西
     def gen_drop_waypoint_v2(self, target: list):
         h = target[2]
@@ -162,7 +171,7 @@ class DropWayPointGen(WayPointShit):
         
         # 修改了盘旋半径
         b = 50.
-        theta = np.arctan(b/a)
+        theta = np.arcsin(b/a)
         dir = ((center - target_2) / a)
         dir = gen_rotate(theta)@ dir
         st = 160 * dir + target_2 
@@ -195,8 +204,8 @@ class DropWayPointGen(WayPointShit):
         st[-1] = 40
         st = enu_to_geodetic(*st, *self.home)
         return st
-        
-if __name__ == "__main__":
-    tmp = [12,13,24]
-    print(stats.mode(np.array(tmp)))
+    
+
+
+
     

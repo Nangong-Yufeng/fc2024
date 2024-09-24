@@ -14,7 +14,13 @@ import time
 import numpy as np
 import nav_msgs
 import sys
-sys.path.append("/home/joe/Desktop/NGYF_ws")
+import os
+from pathlib import Path
+FILE = os.getcwd()
+ROOT = FILE # YOLOv5 root directory
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from utils.classes import BaseNode, WayPointShit, TakeOffShit, ParameterShit, RallyPointShit, CallBackNode, State
 from utils.location import geodetic_to_enu, enu_to_geodetic
 from utils.DropWayPointGen import DropWayPointGen
