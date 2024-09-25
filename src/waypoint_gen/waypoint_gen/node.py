@@ -24,7 +24,7 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from utils.classes import BaseNode, WayPointShit, TakeOffShit, ParameterShit, RallyPointShit, CallBackNode, State
 from utils.location import geodetic_to_enu, enu_to_geodetic
 from utils.DropWayPointGen import DropWayPointGen
-from utils.CompeitionWaypointA import DropWayPointGenV2
+from utils.CompeitionWaypointA import DropWayPointGenA
 
 qos_profile = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -180,7 +180,7 @@ class PlayGroundNode(WayPointShit, ParameterShit, RallyPointShit):
         # print("working...")
         # print(self.control_state)
         if self.offboard_setpoint_counter <= 20:
-            tmp = DropWayPointGenV2([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
+            tmp = DropWayPointGenA([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
             # print(tmp.rally)
             self.cache = tmp.det_ret
             
@@ -215,7 +215,7 @@ class PlayGroundNode(WayPointShit, ParameterShit, RallyPointShit):
                 self.control_state = State.CHG_PARAM
             elif self.rallypoint_new_push_req == False and self.rallypoint_push_success == False:
                 self.rallypoint_new_push_req = True
-                tmp = DropWayPointGenV2([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
+                tmp = DropWayPointGenA([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
                 self.rallypoint_push(tmp.rally)
                 
         

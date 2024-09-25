@@ -17,7 +17,7 @@ import std_msgs.msg
 from utils.classes import BaseNode, WayPointShit, TakeOffShit, ParameterShit, RallyPointShit, CallBackNode, State
 from utils.location import geodetic_to_enu, enu_to_geodetic
 from utils.DropWayPointGen import DropWayPointGen
-from utils.CompeitionWaypointA import DropWayPointGenV2
+from utils.CompeitionWaypointA import DropWayPointGenA
 import std_msgs
 qos_profile = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -91,7 +91,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         self.stage = -1
         
         # 关于集结点盘旋的判断
-        tmp = DropWayPointGenV2([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
+        tmp = DropWayPointGenA([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
         self.rally_point_gps = tmp.rally
         self.rally_point_enu = []
         self.rally_hover_flg = False
