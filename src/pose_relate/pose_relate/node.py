@@ -25,7 +25,7 @@ qos_profile = QoSProfile(
     depth=1
 )
 path1="/home/joe/Desktop/pose_velocity.txt"
-
+wp_path = "waypoint/way"
 '''
 class PoseRelateNode(Node):
 
@@ -62,18 +62,30 @@ class PoseRelateNode(Node):
         self.size = len(self.data)     
 '''
 
+def init_wp_info():
+    ret = []
+    for i in range(1,5):
+        with open(wp_path+str(i)+".txt") as f:
+            lines = []
+            for line in f.readlines():
+                wp = line.split("\t")
+                lines.append(wp)
+            ret.append([[float(lines[2][8]), float(lines[2][9]), float(lines[2][10])], len(lines)-2])
+    return ret
 
+def check_vector(vec1, vec2):
+    return vec1.dot(vec2) < 0
 
 class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit):
     def __init__(self):
         BaseNode.__init__(self)
         # 订阅标靶信息
         self.target_sub = self.create_subscription(std_msgs.msg.UInt32, "/vision/target_num", self.target_num_cb, qos_profile)
-        self.tg1_drop_wp_info = [22.589618580932502, 113.97579434145776, 120.00114741522292]
-        self.tg2_drop_wp_info = [22.58947306833752, 113.97575332086035, 120.00157961712779]
-        self.tg3_drop_wp_info = [22.589321725547446, 113.97593604626788, 120.0019541381611]
+        self.tg_wp_info = init_wp_info()
+        
         self.final_drop_first_wp = []
-        self.final_drop_wp_num = 8
+        self.final_drop_wp_num = None
+        self.detect_wp_num = None
         self.final_target = None
         self.stage = -1
         
@@ -143,7 +155,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         if theta <= 40. and theta >= 30.:
             tmp = vec - dir
             if tmp[0] > 0: return 
-            self.set_mode('AUTO')
+            self.stage = 3
         
     def gps_to_enu_cb(self):
         if self.home == None: return
@@ -162,16 +174,16 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
             if self.rally_hover_log == False:
                 print('\n')
                 self.get_logger().info("---------------")
-                self.get_logger().info("已经环绕集结点大于十秒, 进入投弹程序")
+                self.get_logger().info("已经环绕集结点8秒, 进入投弹程序")
                 self.get_logger().info("---------------")
                 print('\n')
                 self.rally_hover_log = True
             self.rally_hover_flg = True
         maxn = 60.
         dis = np.linalg.norm(np.array(self.local_position) - np.array(self.rally_point_enu))
-        # print(dis)
-        if dis < maxn: self.rally_hover_counter += 1
     
+        if dis < maxn: self.rally_hover_counter += 1
+
     def target_get_timer_cb(self):
         if self.stage == 1:
             if self.parameter_new_chg_req == False and self.parameter_chg_success == True:
@@ -184,10 +196,18 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         elif self.stage == 2:
             if self.parameter_new_chg_req == False and self.parameter_chg_success == True:
                 self.parameter_chg_success = False
-                self.stage = 3
+                self.stage = -1
             elif self.parameter_new_chg_req == False and self.parameter_chg_success == False:
                 self.parameter_new_chg_req = True
                 self.chg_parameter("TARGET_GET", 1.0)
+        
+        elif self.stage == 3:
+            if self.mode_new_set_req == False and self.mode_set_success == True:
+                self.mode_set_success = False
+                self.stage = -1
+            elif self.mode_new_set_req == False and self.mode_set_success == False:
+                self.mode_new_set_req = True
+                self.set_mode('AUTO')
     
     def target_num_cb(self, target_num: std_msgs.msg.UInt32) -> None:
         if self.stage == -1:

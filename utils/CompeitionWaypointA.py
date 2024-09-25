@@ -30,17 +30,17 @@ class DropWayPointGenV2(WayPointShit):
         self.tg4_enu = geodetic_to_enu(tg4_gps[0], tg4_gps[1], tg4_gps[2], home[0], home[1], home[2])
         
         self.rally = self.gen_rally_waypoint()
-        self.output_wp_to_file("/home/joe/Desktop/rally.txt", self.rally, type=1)
+        self.output_wp_to_file("waypoint/rally.txt", self.rally, type=1)
         self.det_ret = self.gen_detect_waypoint()
-        self.output_wp_to_file("/home/joe/Desktop/way.txt", self.det_ret)
+        self.output_wp_to_file("waypoint/way.txt", self.det_ret)
         self.tg1_ret = self.gen_drop_waypoint_v2(self.tg1_enu, 1)
-        self.output_wp_to_file("/home/joe/Desktop/way1.txt", self.tg1_ret)
+        self.output_wp_to_file("waypoint/way1.txt", self.tg1_ret)
         self.tg2_ret = self.gen_drop_waypoint_v2(self.tg2_enu, 2)
-        self.output_wp_to_file("/home/joe/Desktop/way2.txt", self.tg2_ret)
+        self.output_wp_to_file("waypoint/way2.txt", self.tg2_ret)
         self.tg3_ret = self.gen_drop_waypoint_v2(self.tg3_enu, 3)
-        self.output_wp_to_file("/home/joe/Desktop/way3.txt", self.tg3_ret)
+        self.output_wp_to_file("waypoint/way3.txt", self.tg3_ret)
         self.tg4_ret = self.gen_drop_waypoint_v2(self.tg4_enu, 4)
-        self.output_wp_to_file("/home/joe/Desktop/way4.txt", self.tg4_ret)
+        self.output_wp_to_file("waypoint/way4.txt", self.tg4_ret)
         
         
     def get_subsidiary_point_loc(self, st:list, ed:list, dist1:float, dist2:float, dist3:float, angle:float) -> list:
