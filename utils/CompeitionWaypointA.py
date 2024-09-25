@@ -55,7 +55,7 @@ class DropWayPointGenV2(WayPointShit):
         tmp = gen_rotate(angle) @ v[0:2]
         v = np.zeros(3)
         v[0:2] = tmp
-        v[-1] = ed[-1]
+        # v[-1] = ed[-1]
         ret3 = (ret2 + dist3*v).tolist()
         return ret1, ret2, ret3
         
@@ -137,4 +137,4 @@ class DropWayPointGenV2(WayPointShit):
         return st
 
 if __name__ == "__main__":
-    d = DropWayPointGenV2([38.55922799, 115.14220914, 15], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
+    d = DropWayPointGenV2([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])

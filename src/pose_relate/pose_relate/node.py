@@ -17,6 +17,7 @@ import std_msgs.msg
 from utils.classes import BaseNode, WayPointShit, TakeOffShit, ParameterShit, RallyPointShit, CallBackNode, State
 from utils.location import geodetic_to_enu, enu_to_geodetic
 from utils.DropWayPointGen import DropWayPointGen
+from utils.CompeitionWaypointA import DropWayPointGenV2
 import std_msgs
 qos_profile = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -85,12 +86,12 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         
         self.final_drop_first_wp = []
         self.final_drop_wp_num = None
-        self.detect_wp_num = None
+        self.detect_wp_num = 26
         self.final_target = None
         self.stage = -1
         
         # 关于集结点盘旋的判断
-        tmp = DropWayPointGen([22.5905687, 113.9750004, 0], [22.59098958, 113.97530335, 120], [22.59078045, 113.97509099, 120], [22.59072163, 113.97555110, 120])
+        tmp = DropWayPointGenV2([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
         self.rally_point_gps = tmp.rally
         self.rally_point_enu = []
         self.rally_hover_flg = False
@@ -132,7 +133,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         if self.wp_push_success_flg == 0: return
         if self.new_mission == False: self.new_mission = True
         if self.current_reached_waypoint is None: return 
-        if self.current_reached_waypoint >= self.final_drop_wp_num: 
+        if self.current_reached_waypoint != self.detect_wp_num and  self.current_reached_waypoint >= self.final_drop_wp_num: 
             self.mission_fin = True
             self.get_logger().info("投弹已完成!!!")
     
@@ -140,7 +141,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         if self.state.mode == 'AUTO':
             self.switch_to_auto_log_flg = False
             return
-        if len(self.final_drop_first_wp) == 0 or self.final_target == 0 or self.rally_hover_flg == False or self.wp_push_success_flg == 0 or self.mission_fin == True or self.stage !=3: return
+        if len(self.final_drop_first_wp) == 0 or self.final_target == 0 or self.rally_hover_flg == False or self.wp_push_success_flg == 0 or self.mission_fin == True or self.stage != 4: return
         if self.switch_to_auto_log_flg == False:
             self.get_logger().info("即将切换到自动模式...")
             self.switch_to_auto_log_flg = True
@@ -154,7 +155,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         # TODO: tmp[0] 的正负需要根据情况进行修改! 
         if theta <= 40. and theta >= 30.:
             tmp = vec - dir
-            if tmp[0] > 0: return 
+            if not check_vector(dir, tmp): return 
             self.stage = 3
         
     def gps_to_enu_cb(self):
@@ -167,7 +168,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
             self.rally_hover_counter = 0
             self.rally_hover_log = False
             # TODO: 需要修改home点
-            self.home = [22.5905687, 113.9750004, 0]
+            self.home = [38.55836766, 115.14099924, 0]
             return
         elif self.rally_hover_counter >= 80:
             if self.stage == 0: self.stage = 1
@@ -196,7 +197,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         elif self.stage == 2:
             if self.parameter_new_chg_req == False and self.parameter_chg_success == True:
                 self.parameter_chg_success = False
-                self.stage = -1
+                self.stage = 4
             elif self.parameter_new_chg_req == False and self.parameter_chg_success == False:
                 self.parameter_new_chg_req = True
                 self.chg_parameter("TARGET_GET", 1.0)
@@ -204,7 +205,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         elif self.stage == 3:
             if self.mode_new_set_req == False and self.mode_set_success == True:
                 self.mode_set_success = False
-                self.stage = -1
+                self.stage = 4
             elif self.mode_new_set_req == False and self.mode_set_success == False:
                 self.mode_new_set_req = True
                 self.set_mode('AUTO')
@@ -213,9 +214,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         if self.stage == -1:
             self.final_target = target_num.data
             self.get_logger().info("获取到目标标靶: " + str(self.final_target))
-            if self.final_target == 1: self.final_drop_first_wp = self.tg1_drop_wp_info
-            elif self.final_target == 2: self.final_drop_first_wp = self.tg2_drop_wp_info
-            elif self.final_target == 3: self.final_drop_first_wp = self.tg3_drop_wp_info
+            self.final_drop_first_wp, self.final_drop_wp_num = self.tg_wp_info[self.final_target - 1]
             self.stage = 0
 
     
