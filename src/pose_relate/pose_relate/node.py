@@ -16,8 +16,8 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 import std_msgs.msg
 from utils.classes import BaseNode, WayPointShit, TakeOffShit, ParameterShit, RallyPointShit, CallBackNode, State
 from utils.location import geodetic_to_enu, enu_to_geodetic
-from utils.DropWayPointGen import DropWayPointGen
-from utils.CompeitionWaypointA import DropWayPointGenA
+# from utils.DropWayPointGen import DropWayPointGen
+from utils.CompeitionWaypointA import DropWayPointGenA_V2, DropWayPointGenB_V2
 import std_msgs
 qos_profile = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -74,25 +74,38 @@ def init_wp_info():
             ret.append([[float(lines[2][8]), float(lines[2][9]), float(lines[2][10])], len(lines)-2])
     return ret
 
+def init_rally_info():
+    ret = []
+    with open("waypoint/rally.txt") as f:
+        lines = []
+        for line in f.readlines():
+            wp = line.split("\t")
+            lines.append(wp)
+        ret = [float(lines[2][8]), float(lines[2][9]), float(lines[2][10])]
+    return ret
+
 def check_vector(vec1, vec2):
-    return vec1.dot(vec2) < 0
+    vec1 = np.array([vec1[0], vec1[1], 0])
+    vec2 = np.array([vec2[0], vec2[1], 0])
+    return np.cross(vec1, vec2)[-1] > 0 
+    
 
 class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit):
     def __init__(self):
         BaseNode.__init__(self)
         # 订阅标靶信息
         self.target_sub = self.create_subscription(std_msgs.msg.UInt32, "/vision/target_num", self.target_num_cb, qos_profile)
-        self.tg_wp_info = init_wp_info()
         
         self.final_drop_first_wp = []
         self.final_drop_wp_num = None
-        self.detect_wp_num = 26
+        self.detect_wp_num = 30
         self.final_target = None
         self.stage = -1
         
         # 关于集结点盘旋的判断
-        tmp = DropWayPointGenA([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
-        self.rally_point_gps = tmp.rally
+        # tmp = DropWayPointGenA_V2([38.557757, 115.140176, 0], [38.5570209, 115.1385889, 20], [38.5568987, 115.1384065, 20], [38.5567613, 115.1385473, 20], [38.556884, 115.138737, 20])
+        self.tg_wp_info = init_wp_info()
+        self.rally_point_gps = init_rally_info()
         self.rally_point_enu = []
         self.rally_hover_flg = False
         self.rally_hover_counter = 0
@@ -108,7 +121,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         self.rally_hover_judge_timer = self.create_timer(0.1, self.rally_hover_judge_cb)
         self.gps_to_enu_timer = self.create_timer(0.1, self.gps_to_enu_cb)
         self.switch_to_auto_timer = self.create_timer(0.1, self.switch_to_auto_cb)
-        self.wp_push_success_timer = self.create_timer(5, self.wp_push_success_cb)
+        self.wp_push_success_timer = self.create_timer(2, self.wp_push_success_cb)
         self.new_mission_fin_timer = self.create_timer(0.1, self.new_mission_fin_cb)
         self.param_chg_timer = self.create_timer(0.1, self.target_get_timer_cb)
         
@@ -133,7 +146,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         if self.wp_push_success_flg == 0: return
         if self.new_mission == False: self.new_mission = True
         if self.current_reached_waypoint is None: return 
-        if self.current_reached_waypoint != self.detect_wp_num and  self.current_reached_waypoint >= self.final_drop_wp_num: 
+        if  self.current_reached_waypoint == self.final_drop_wp_num: 
             self.mission_fin = True
             self.get_logger().info("投弹已完成!!!")
     
@@ -154,8 +167,7 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
         theta = np.arccos(np.dot(vec, dir) / (np.linalg.norm(vec) * np.linalg.norm(dir))) * 180. / np.pi
         # TODO: tmp[0] 的正负需要根据情况进行修改! 
         if theta <= 40. and theta >= 30.:
-            tmp = vec - dir
-            if not check_vector(dir, tmp): return 
+            if not check_vector(dir, vec): return 
             self.stage = 3
         
     def gps_to_enu_cb(self):
@@ -168,14 +180,14 @@ class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit)
             self.rally_hover_counter = 0
             self.rally_hover_log = False
             # TODO: 需要修改home点
-            self.home = [38.55836766, 115.14099924, 0]
+            # self.home = [38.557757, 115.140176, 0]
             return
-        elif self.rally_hover_counter >= 80:
+        elif self.rally_hover_counter >= 60:
             if self.stage == 0: self.stage = 1
             if self.rally_hover_log == False:
                 print('\n')
                 self.get_logger().info("---------------")
-                self.get_logger().info("已经环绕集结点8秒, 进入投弹程序")
+                self.get_logger().info("已经环绕集结点6秒, 进入投弹程序")
                 self.get_logger().info("---------------")
                 print('\n')
                 self.rally_hover_log = True

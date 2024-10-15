@@ -38,7 +38,7 @@ class TrajectoryRelateNode(Node):
     def __init__(self):
         super().__init__('pose_relate_node')
         # self.declare_parameter('waypoint_file', "/home/joe/Desktop/waypoints_test/drop/drop6.waypoints")
-        self.declare_parameter('waypoint_file', "no")
+        self.declare_parameter('waypoint_file', "waypoint/way.txt")
         
         # self.local_position_sub = self.create_subscription(PoseStamped,"/mavros/local_position/pose",self.local_position_cb,qos_profile)
         # self.local_velocity_sub = self.create_subscription(TwistStamped, "/mavros/local_position/velocity_local", self.local_velocity_cb, qos_profile)
@@ -69,7 +69,7 @@ class TrajectoryRelateNode(Node):
         
         waypoints = []
         flg = False
-        if path != "no":
+        if path != "no" and self.home is not None:
             with open(path, 'r') as f:
                 while True:
                     line = f.readline()
