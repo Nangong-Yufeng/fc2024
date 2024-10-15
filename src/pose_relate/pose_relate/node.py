@@ -87,7 +87,7 @@ def init_rally_info():
 def check_vector(vec1, vec2):
     vec1 = np.array([vec1[0], vec1[1], 0])
     vec2 = np.array([vec2[0], vec2[1], 0])
-    return np.cross(vec1, vec2)[-1] > 0 
+    return np.cross(vec1, vec2)[-1] < 0 
     
 
 class SwitchToAutoNode(WayPointShit, ParameterShit, RallyPointShit, TakeOffShit):

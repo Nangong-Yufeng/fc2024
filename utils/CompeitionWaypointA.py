@@ -315,7 +315,7 @@ class DropWayPointGenB_V2(WayPointShit):
         tag2 = np.array(self.tg2_enu) + dir1 * 10.
         vet = gen_rotate(np.pi / 2) @ dir1[:2]
         vet = np.array([vet[0], vet[1], 0])
-        tag3 = tag2 + vet * 56.
+        tag3 = tag2 + vet * 62.
         tag4 = tag3 - dir1 * 120.
         dir2 = (np.array(self.tg4_enu) - np.array(self.tg3_enu)) / np.linalg.norm(np.array(self.tg4_enu) - np.array(self.tg3_enu))  # 2 -> 1
         vet = gen_rotate(np.pi / 2) @ dir2[:2]
@@ -334,10 +334,9 @@ class DropWayPointGenB_V2(WayPointShit):
         req.waypoints.append(self.generate_waypoint(0., 0., 0.))
         req.waypoints.extend(self.generate_straight_line_waypoints(tag1, tag2, increase=25.)[:-1])
         # req.waypoints.extend(self.generate_straight_line_waypoints(tag2, sub1, increase=50.))
-        tag3[-1]=25
+        tag3[-1]=28
         req.waypoints.extend(self.generate_curve_line_waypoints(tag2, tag3, np.deg2rad(180), False, 18.)[:-1])
-        tag4[-1]=25
-        
+        tag4[-1]=28
         req.waypoints.extend(self.generate_straight_line_waypoints(tag3, tag4, 25.)[:-1])
         req.waypoints.extend(self.generate_curve_line_waypoints(tag4, tag5, np.pi, False, 18.)[:-1])
         req.waypoints.extend(self.generate_straight_line_waypoints(tag5, tag6, 25.)[:-1])
@@ -370,7 +369,7 @@ class DropWayPointGenB_V2(WayPointShit):
         tmp_st[0] = st[0]
         tmp_st[1] = st[1]
         tmp_st[2] = target[2]
-        if idx == 1 or idx == 4: ed = -40 * dir + target_2 
+        if idx == 1 or idx == 4: ed = -60 * dir + target_2 
         else: ed = -60 * dir + target_2
         tmp_ed = np.zeros(3)
         tmp_ed[0] = ed[0]
