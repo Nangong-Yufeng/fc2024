@@ -290,9 +290,18 @@ class DropWayPointGenB_V2(WayPointShit):
         output_wp_to_file("waypoint/way.txt", self.det_ret)
         
         #TODO: 标靶点坐标
-        self.tg1_gps = [31.85703750, 106.89632730, 20]
-        self.tg2_gps = [31.8569133, 106.8964558, 20]
-        self.tg3_gps = [31.85706590, 106.89654620, 20]
+        # self.tg1_gps = [31.85703750, 106.89632730, 20]
+        # self.tg2_gps = [31.8569133, 106.8964558, 20]
+        # self.tg3_gps = [31.85706590, 106.89654620, 20]
+        
+        # self.tg1_gps = [31.8570113, 106.8963353, 20]
+        # self.tg2_gps = [31.8568573, 106.8964678, 20]
+        # self.tg3_gps = [31.8570296, 106.8965509, 20]
+        
+        self.tg1_gps = [31.8569931, 106.8963299, 20]
+        self.tg2_gps = [31.8568514, 106.89645, 20]
+        self.tg3_gps = [31.857014, 106.8965388, 20]
+        
         self.tg1_enu = geodetic_to_enu(self.tg1_gps[0], self.tg1_gps[1], self.tg1_gps[2], self.home[0], self.home[1], self.home[2])
         self.tg2_enu = geodetic_to_enu(self.tg2_gps[0], self.tg2_gps[1], self.tg2_gps[2], self.home[0], self.home[1], self.home[2])
         self.tg3_enu = geodetic_to_enu(self.tg3_gps[0], self.tg3_gps[1], self.tg3_gps[2], self.home[0], self.home[1], self.home[2])
@@ -321,7 +330,7 @@ class DropWayPointGenB_V2(WayPointShit):
         vet = gen_rotate(np.pi / 2) @ dir2[:2]
         vet = np.array([vet[0], vet[1], 0])
         rally = np.array(self.tg3_enu) - dir2 * 150
-        rally = rally - vet * 45
+        rally = rally - vet * 40
         rally[-1] = 25
         # rot60 
         tag5 = np.array(self.tg4_enu) + dir2 * 80.
@@ -379,114 +388,10 @@ class DropWayPointGenB_V2(WayPointShit):
         return req
     
     
-class DropWayPointGenA_V2(WayPointShit):
-    def __init__(self, home, tg1_gps, tg2_gps, tg3_gps, tg4_gps):
-        self.home = home
-        self.tg1_gps = tg1_gps
-        self.tg2_gps = tg2_gps
-        self.tg3_gps = tg3_gps
-        self.tg4_gps = tg4_gps
-        
-        self.tg1_enu = geodetic_to_enu(self.tg1_gps[0], self.tg1_gps[1], self.tg1_gps[2], self.home[0], self.home[1], self.home[2])
-        self.tg2_enu = geodetic_to_enu(self.tg2_gps[0], self.tg2_gps[1], self.tg2_gps[2], self.home[0], self.home[1], self.home[2])
-        self.tg3_enu = geodetic_to_enu(self.tg3_gps[0], self.tg3_gps[1], self.tg3_gps[2], self.home[0], self.home[1], self.home[2])
-        self.tg4_enu = geodetic_to_enu(self.tg4_gps[0], self.tg4_gps[1], self.tg4_gps[2], self.home[0], self.home[1], self.home[2])
-        
-        self.det_ret, self.rally= self.gen_detect_waypoint()
-        output_wp_to_file("waypoint/rally.txt", self.rally, type=1)
-        output_wp_to_file("waypoint/way.txt", self.det_ret)
-        
-        #TODO: 标靶点坐标
-        self.tg1_gps = [31.8372085, 106.9439793, 20]
-        self.tg2_gps = [31.8371263, 106.9441105, 20]
-        self.tg3_gps = [31.8373105, 106.9441102, 20]
-        self.tg1_enu = geodetic_to_enu(self.tg1_gps[0], self.tg1_gps[1], self.tg1_gps[2], self.home[0], self.home[1], self.home[2])
-        self.tg2_enu = geodetic_to_enu(self.tg2_gps[0], self.tg2_gps[1], self.tg2_gps[2], self.home[0], self.home[1], self.home[2])
-        self.tg3_enu = geodetic_to_enu(self.tg3_gps[0], self.tg3_gps[1], self.tg3_gps[2], self.home[0], self.home[1], self.home[2])
-        
-        self.tg1_ret = self.gen_drop_waypoint_v2(self.tg1_enu, 1)
-        output_wp_to_file("waypoint/way1.txt", self.tg1_ret)
-        self.tg2_ret = self.gen_drop_waypoint_v2(self.tg2_enu, 2)
-        output_wp_to_file("waypoint/way2.txt", self.tg2_ret)
-        self.tg3_ret = self.gen_drop_waypoint_v2(self.tg3_enu, 3)
-        output_wp_to_file("waypoint/way3.txt", self.tg3_ret)
-
-
-    # 比赛四个点天井点坐标生成侦察航线
-    def gen_detect_waypoint(self):
-        def gen_rotate(x):
-            return np.array([[np.cos(x), -np.sin(x)], [np.sin(x), np.cos(x)]])
-        dir1 = (np.array(self.tg2_enu) - np.array(self.tg1_enu)) / np.linalg.norm(np.array(self.tg2_enu) - np.array(self.tg1_enu))  # 1 -> 2
-        tag1 = np.array(self.tg1_enu) - dir1 * 80.
-        tag2 = np.array(self.tg2_enu) + dir1 * 10.
-        vet = gen_rotate(np.pi / 2) @ dir1[:2]
-        vet = np.array([vet[0], vet[1], 0])
-        tag3 = tag2 - vet * 56.
-        tag4 = tag3 - dir1 * 120.
-        dir2 = (np.array(self.tg4_enu) - np.array(self.tg3_enu)) / np.linalg.norm(np.array(self.tg4_enu) - np.array(self.tg3_enu))  # 2 -> 1
-        vet = gen_rotate(np.pi / 2) @ dir2[:2]
-        vet = np.array([vet[0], vet[1], 0])
-        
-        #TODO:盘旋点修改
-        # competition version
-        rally = np.array(self.tg3_enu) - dir2 * 150
-        # rally = np.array(self.tg3_enu) + dir2 * 180
-        rally = rally + vet * 45
-        rally[-1] = 25
-        # rot60 
-        tag5 = np.array(self.tg4_enu) + dir2 * 80.
-        tag6 = np.array(self.tg3_enu) - dir2 * 10.
-        rot160 = gen_rotate(np.deg2rad(140)).dot(dir2[:2])
-        rot160 = np.array([rot160[0], rot160[1], 0])
-        tag7 = tag6 + rot160 * 50
-        
-        req = mavros_msgs.srv.WaypointPush.Request()
-        req.waypoints.append(self.generate_waypoint(0., 0., 0.))
-        req.waypoints.extend(self.generate_straight_line_waypoints(tag1, tag2, increase=25.)[:-1])
-        req.waypoints.extend(self.generate_curve_line_waypoints(tag2, tag3, np.pi, True, 20.)[:-1])
-        req.waypoints.extend(self.generate_straight_line_waypoints(tag3, tag4, 25.)[:-1])
-        req.waypoints.extend(self.generate_curve_line_waypoints(tag4, tag5, np.pi, True, 20.)[:-1])
-        req.waypoints.extend(self.generate_straight_line_waypoints(tag5, tag6, 25.)[:-1])
-        req.waypoints.extend(self.generate_straight_line_waypoints(tag6, tag7, 25.))
-        
-        return req, enu_to_geodetic(*rally, *self.home)
-    
-    # 从盘旋点开始出发
-    # TODO: 针对性修改了一些东西
-    def gen_drop_waypoint_v2(self, target: list, idx: int):
-        h = target[2]
-        def gen_rotate(x):
-            return np.array([[np.cos(x), -np.sin(x)], [np.sin(x), np.cos(x)]])
-        req = mavros_msgs.srv.WaypointPush.Request()
-        req.waypoints.append(self.generate_waypoint(0., 0., 0.))
-        center = np.array(geodetic_to_enu(*self.rally, *self.home))[:2]
-        target_2 = np.array(target)[:2]
-        a = np.linalg.norm(target_2 - center)
-        
-        # 修改了盘旋半径
-        b = 45.
-        theta = np.arcsin(b/a)
-        dir = ((center - target_2) / a)
-        # TODO: change the neg
-        dir = gen_rotate(-theta)@ dir
-        if idx == 1 or idx == 4: st = 120 * dir + target_2 
-        else: st = 100 * dir + target_2
-        tmp_st = np.zeros(3)
-        tmp_st[0] = st[0]
-        tmp_st[1] = st[1]
-        tmp_st[2] = target[2]
-        if idx == 1 or idx == 4: ed = -40 * dir + target_2 
-        else: ed = -60 * dir + target_2
-        tmp_ed = np.zeros(3)
-        tmp_ed[0] = ed[0]
-        tmp_ed[1] = ed[1]
-        tmp_ed[2] = target[2]
-        req.waypoints.extend(self.generate_straight_line_waypoints(tmp_st, tmp_ed, increase=25.))
-        return req
 
 if __name__ == "__main__":
     # d = DropWayPointGenA([38.55836766, 115.14099924, 0], [38.55957692, 115.14290759, 15], [38.55971915, 115.14313070, 15], [38.55986327, 115.14298034, 15], [38.55970967, 115.14275965, 15])
-    e = DropWayPointGenB_V2([31.8371110, 106.9440972, 0], [31.85703780, 106.89650330, 20], [31.85689370, 106.89650430, 20], [31.85689110, 106.89633400, 20], [31.85703750, 106.89632730, 20])
+    e = DropWayPointGenB_V2([31.8371110, 106.9440972, 0], [31.8570693, 106.8964873, 17], [31.8568984, 106.896497, 17], [31.8569025, 106.8963871, 17], [31.8570516, 106.8963691, 17], )
     # e = DropWayPointGenB_V2([38.557757, 115.140176, 0], [38.529368, 115.129752, 20], [38.529555, 115.129752, 20], [38.529555, 115.130000, 20], [38.529371, 115.129987, 20])
 
     # gen_sp_waypoint()
